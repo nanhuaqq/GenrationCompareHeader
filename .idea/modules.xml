@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/GenrationCompareHeader.iml" filepath="$PROJECT_DIR$/GenrationCompareHeader.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/appBottomSheet/appBottomSheet.iml" filepath="$PROJECT_DIR$/appBottomSheet/appBottomSheet.iml" />
     </modules>
   </component>
 </project>
