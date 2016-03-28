@@ -3,6 +3,7 @@ package cn.mucang.genrationcompareheader;
 import android.content.Context;
 import android.graphics.Rect;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
@@ -76,7 +77,7 @@ public class BjHeaderMenuView extends AdapterView<Adapter>{
     /** Reusable rect */
     private Rect mRect;
 
-    private int visibleItemCount = 10;
+    private int visibleItemCount = 2;
 
     private int paddingLeftAndRight = 8;
 
@@ -211,7 +212,7 @@ public class BjHeaderMenuView extends AdapterView<Adapter>{
                 } else if (mTouchState == TOUCH_STATE_SCROLL) {
                     mVelocityTracker.addMovement(event);
                     mVelocityTracker.computeCurrentVelocity(PIXELS_PER_SECOND);
-                    velocity = mVelocityTracker.getYVelocity();
+                    velocity = mVelocityTracker.getXVelocity();
                 }
                 endTouch(velocity);
                 break;
@@ -297,7 +298,10 @@ public class BjHeaderMenuView extends AdapterView<Adapter>{
                     mListLeftStart = getChildLeft(getChildAt(0)) - mListLeftOffset;
                     mDynamics.update(AnimationUtils.currentAnimationTimeMillis());
 
-                    scrollList((int)mDynamics.getPosition() - mListLeftStart);
+                    scrollList((int) mDynamics.getPosition() - mListLeftStart);
+
+                    Log.e("BjHeaderMenuView=>", "mDynamics.getPosition=>" + mDynamics.getPosition());
+                    Log.e("BjHeaderMenuView=>","mListLeftStart=>"+mListLeftStart);
 
                     if (!mDynamics.isAtRest(VELOCITY_TOLERANCE, POSITION_TOLERANCE)) {
                         // the list is not at rest, so schedule a new frame
@@ -310,8 +314,9 @@ public class BjHeaderMenuView extends AdapterView<Adapter>{
 
         if (mDynamics != null) {
             // update the dynamics with the correct position and start the
-            // runnable
+//            // runnable
             mDynamics.setState(mListLeft, velocity, AnimationUtils.currentAnimationTimeMillis());
+            Log.e("BjHeaderMenuView=>", "mListLeft=>" + mListLeft);
             post(mDynamicsRunnable);
         }
 
