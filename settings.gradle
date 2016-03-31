@@ -1,1 +1,4 @@
 include ':app','appBottomSheet'
+include ':androidHorizontalListView'
+include ':androidHorizontalListViewSample'
+include ':slidingUpPaneLayoutmaster'

@@ -2,6 +2,7 @@ package cn.mucang.genrationcompareheader;
 
 import android.content.Context;
 import android.graphics.Rect;
+import android.support.v4.view.ViewCompat;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -9,6 +10,8 @@ import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.animation.AnimationUtils;
+import android.view.animation.DecelerateInterpolator;
+import android.view.animation.Interpolator;
 import android.widget.Adapter;
 import android.widget.AdapterView;
 
@@ -63,7 +66,7 @@ public class BjHeaderMenuView extends AdapterView<Adapter>{
     private int mListLeftOffset;
 
     /** The adaptor position of the first visible item */
-    private int mFirstItemPosition;
+    private int mFirstItemPosition = 0;
 
     /** The adaptor position of the last visible item */
     private int mLastItemPosition;
@@ -81,23 +84,9 @@ public class BjHeaderMenuView extends AdapterView<Adapter>{
 
     private int paddingLeftAndRight = 8;
 
-    /** Unit used for the velocity tracker */
-    private static final int PIXELS_PER_SECOND = 1000;
-
-    /** Tolerance for the velocity */
-    private static final float VELOCITY_TOLERANCE = 0.5f;
-
-    /** Tolerance for the position used for snapping */
-    private static final float POSITION_TOLERANCE = 0.4f;
-
-    /** Velocity tracker used to get fling velocities */
     private VelocityTracker mVelocityTracker;
 
-    /** Dynamics object used to handle fling and snap */
-    private Dynamics mDynamics;
-
-    /** Runnable used to animate fling and snap */
-    private Runnable mDynamicsRunnable;
+    private static final int PIXELS_PER_SECOND = 1000;
 
     public int getPaddingLeftAndRight() {
         return paddingLeftAndRight;
@@ -115,20 +104,6 @@ public class BjHeaderMenuView extends AdapterView<Adapter>{
         this.visibleItemCount = visibleItemCount;
     }
 
-    /**
-     * Set the dynamics object used for fling and snap behavior.
-     *
-     * @param dynamics The dynamics object
-     */
-    public void setDynamics(final Dynamics dynamics) {
-        if (mDynamics != null) {
-            dynamics.setState(mDynamics.getPosition(), mDynamics.getVelocity(), AnimationUtils
-                    .currentAnimationTimeMillis());
-        }
-        mDynamics = dynamics;
-        mDynamics.setMaxPosition(Float.MAX_VALUE);
-        mDynamics.setMinPosition(-Float.MAX_VALUE);
-    }
 
     public BjHeaderMenuView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -180,7 +155,7 @@ public class BjHeaderMenuView extends AdapterView<Adapter>{
                 return startScrollIfNeeded(event);
 
             default:
-                endTouch(0);
+                endTouch(0,0);
                 return false;
         }
     }
@@ -192,15 +167,22 @@ public class BjHeaderMenuView extends AdapterView<Adapter>{
         }
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
+                if ( mTouchState != TOUCH_STATE_RESTING ){
+                    return true;
+                }
                 startTouch(event);
                 break;
 
             case MotionEvent.ACTION_MOVE:
+
                 if (mTouchState == TOUCH_STATE_CLICK) {
                     startScrollIfNeeded(event);
                 }
                 if (mTouchState == TOUCH_STATE_SCROLL) {
                     mVelocityTracker.addMovement(event);
+//                    mVelocityTracker.computeCurrentVelocity(PIXELS_PER_SECOND);
+//                    float velocity = mVelocityTracker.getYVelocity();
+
                     scrollList((int)event.getX() - mTouchStartX);
                 }
                 break;
@@ -212,13 +194,34 @@ public class BjHeaderMenuView extends AdapterView<Adapter>{
                 } else if (mTouchState == TOUCH_STATE_SCROLL) {
                     mVelocityTracker.addMovement(event);
                     mVelocityTracker.computeCurrentVelocity(PIXELS_PER_SECOND);
-                    velocity = mVelocityTracker.getXVelocity();
+                    velocity = mVelocityTracker.getYVelocity();
+                    Log.e("qinqun", "mFirst=>" + mFirstItemPosition);
+                    Log.e("qinqun", "mLast=>" + mLastItemPosition);
+
+                    if ( event.getX() - mTouchStartX > 0 ){
+
+//                       if ( mFirstItemPosition == 0 ){
+//                           endTouch(mListLeft, (int)( mListLeft - (event.getX() - mTouchStartX) ));
+//                        }else{
+                           endTouch(mListLeft, (int) ( mListLeft + getWidth() / visibleItemCount - (event.getX() - mTouchStartX)));
+//                       }
+
+                    }else {
+//                        if ( mLastItemPosition >= adapter.getCount()-1  ){
+//                            endTouch(mListLeft, (int)( mListLeft - (event.getX() - mTouchStartX) ));
+//                        }else{
+                            endTouch(mListLeft, (int) ( mListLeft - getWidth() / visibleItemCount - (event.getX() - mTouchStartX)));
+//                        }
+
+                    }
+
+
                 }
-                endTouch(velocity);
+
                 break;
 
             default:
-                endTouch(0);
+                endTouch(0,0);
                 break;
         }
         return true;
@@ -253,8 +256,6 @@ public class BjHeaderMenuView extends AdapterView<Adapter>{
      * @param event The down event
      */
     private void startTouch(final MotionEvent event) {
-        // user is touching the list -> no more fling
-        removeCallbacks(mDynamicsRunnable);
 
         // save the start place
         mTouchStartX = (int)event.getX();
@@ -276,7 +277,8 @@ public class BjHeaderMenuView extends AdapterView<Adapter>{
     /**
      * Resets and recycles all things that need to when we end a touch gesture
      */
-    private void endTouch(final float velocity) {
+    private void endTouch(int fromX,int toX) {
+
         // recycle the velocity tracker
         mVelocityTracker.recycle();
         mVelocityTracker = null;
@@ -284,43 +286,18 @@ public class BjHeaderMenuView extends AdapterView<Adapter>{
         // remove any existing check for longpress
         removeCallbacks(mLongPressRunnable);
 
-        // create the dynamics runnable if we haven't before
-        if (mDynamicsRunnable == null) {
-            mDynamicsRunnable = new Runnable() {
-                public void run() {
-                    // if we don't have any dynamics set we do nothing
-                    if (mDynamics == null) {
-                        return;
-                    }
-                    // we pretend that each frame of the fling/snap animation is
-                    // one touch gesture and therefore set the start position
-                    // every time
-                    mListLeftStart = getChildLeft(getChildAt(0)) - mListLeftOffset;
-                    mDynamics.update(AnimationUtils.currentAnimationTimeMillis());
+        smoothScrollTo(fromX, toX, 100, null);
 
-                    scrollList((int) mDynamics.getPosition() - mListLeftStart);
-
-                    Log.e("BjHeaderMenuView=>", "mDynamics.getPosition=>" + mDynamics.getPosition());
-                    Log.e("BjHeaderMenuView=>","mListLeftStart=>"+mListLeftStart);
-
-                    if (!mDynamics.isAtRest(VELOCITY_TOLERANCE, POSITION_TOLERANCE)) {
-                        // the list is not at rest, so schedule a new frame
-                        postDelayed(this, 16);
-                    }
-
-                }
-            };
+        //重新定位scroll位置
+        int modeResult = Math.abs(mListLeft) % (getWidth()/visibleItemCount);
+        int slot = getWidth()/ (visibleItemCount * 2);
+        if ( modeResult > slot ){
+            smoothScrollTo(mListLeft,mListLeft - (getWidth()/2 -modeResult),50,null);
+        }else if ( modeResult < slot ){
+            smoothScrollTo(mListLeft,mListLeft + modeResult,50,null);
         }
 
-        if (mDynamics != null) {
-            // update the dynamics with the correct position and start the
-//            // runnable
-            mDynamics.setState(mListLeft, velocity, AnimationUtils.currentAnimationTimeMillis());
-            Log.e("BjHeaderMenuView=>", "mListLeft=>" + mListLeft);
-            post(mDynamicsRunnable);
-        }
-
-        // reset touch state
+                // reset touch state
         mTouchState = TOUCH_STATE_RESTING;
     }
 
@@ -333,6 +310,11 @@ public class BjHeaderMenuView extends AdapterView<Adapter>{
     private void scrollList(final int scrolledDistance) {
         mListLeft = mListLeftStart + scrolledDistance;
         requestLayout();
+    }
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     }
 
     /**
@@ -585,5 +567,93 @@ public class BjHeaderMenuView extends AdapterView<Adapter>{
             child.layout(left, top, left + measureWidth, top + height);
             left += width;
         }
+    }
+
+    private SmoothScrollRunnable mCurrentSmoothScrollRunnable;
+
+    private final void smoothScrollTo(int oldScrollValue,int newScrollValue, long duration,
+                                      OnSmoothScrollFinishedListener listener) {
+        if (null != mCurrentSmoothScrollRunnable) {
+            mCurrentSmoothScrollRunnable.stop();
+        }
+
+        if (oldScrollValue != newScrollValue) {
+            if (null == mScrollAnimationInterpolator) {
+                // Default interpolator is a Decelerate Interpolator
+                mScrollAnimationInterpolator = new DecelerateInterpolator();
+            }
+            mCurrentSmoothScrollRunnable = new SmoothScrollRunnable(oldScrollValue, newScrollValue, duration, listener);
+            post(mCurrentSmoothScrollRunnable);
+
+        }
+    }
+
+    private void setHeaderMenuScroll(int currentX){
+        scrollList(currentX - mListLeftStart);
+    }
+
+    private Interpolator mScrollAnimationInterpolator = new DecelerateInterpolator();
+    final class SmoothScrollRunnable implements Runnable {
+        private final Interpolator mInterpolator;
+        private final int mScrollToX;
+        private final int mScrollFromX;
+        private final long mDuration;
+        private OnSmoothScrollFinishedListener mListener;
+
+        private boolean mContinueRunning = true;
+        private long mStartTime = -1;
+        private int mCurrentX = -1;
+
+        public SmoothScrollRunnable(int fromX, int toX, long duration, OnSmoothScrollFinishedListener listener) {
+            mScrollFromX = fromX;
+            mScrollToX = toX;
+            mInterpolator = mScrollAnimationInterpolator;
+            mDuration = duration;
+            mListener = listener;
+        }
+
+        @Override
+        public void run() {
+
+            /**
+             * Only set mStartTime if this is the first time we're starting,
+             * else actually calculate the Y delta
+             */
+            if (mStartTime == -1) {
+                mStartTime = System.currentTimeMillis();
+            } else {
+
+                /**
+                 * We do do all calculations in long to reduce software float
+                 * calculations. We use 1000 as it gives us good accuracy and
+                 * small rounding errors
+                 */
+                long normalizedTime = (1000 * (System.currentTimeMillis() - mStartTime)) / mDuration;
+                normalizedTime = Math.max(Math.min(normalizedTime, 1000), 0);
+
+                final int deltaX = Math.round((mScrollFromX - mScrollToX)
+                        * mInterpolator.getInterpolation(normalizedTime / 1000f));
+                mCurrentX = mScrollFromX - deltaX;
+                setHeaderMenuScroll(mCurrentX);
+            }
+
+            // If we're not at the target Y, keep going...
+            if (mContinueRunning && mScrollToX != mCurrentX) {
+                ViewCompat.postOnAnimation(BjHeaderMenuView.this, this);
+            } else {
+                if (null != mListener) {
+                    mListener.onSmoothScrollFinished();
+                }
+            }
+        }
+
+        public void stop() {
+            mContinueRunning = false;
+            removeCallbacks(this);
+        }
+    }
+
+    static interface OnSmoothScrollFinishedListener {
+        void onSmoothScrollFinished();
     }
 }

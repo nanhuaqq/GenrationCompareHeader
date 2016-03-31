@@ -42,12 +42,11 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        final ArrayList<Contact> contacts = createContactList(20);
+        final ArrayList<Contact> contacts = createContactList(5);
         final MyAdapter adapter = new MyAdapter(this, contacts);
 
         mListView = (BjHeaderMenuView)findViewById(R.id.my_list);
         mListView.setAdapter(adapter);
-        mListView.setDynamics(new SimpleDynamics(0.8f, 0.8f));
 
         mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             public void onItemClick(final AdapterView<?> parent, final View view,
@@ -180,34 +179,32 @@ public class MainActivity extends AppCompatActivity {
     /**
      * A very simple dynamics implementation with spring-like behavior
      */
-    class SimpleDynamics extends Dynamics {
+    class SimpleDynamics extends BjDynamics {
 
         /** The friction factor */
         private float mFrictionFactor;
-
-        /** The snap to factor */
-        private float mSnapToFactor;
 
         /**
          * Creates a SimpleDynamics object
          *
          * @param frictionFactor The friction factor. Should be between 0 and 1.
          *            A higher number means a slower dissipating speed.
-         * @param snapToFactor The snap to factor. Should be between 0 and 1. A
-         *            higher number means a stronger snap.
          */
-        public SimpleDynamics(final float frictionFactor, final float snapToFactor) {
+        public SimpleDynamics(final float frictionFactor) {
             mFrictionFactor = frictionFactor;
-            mSnapToFactor = snapToFactor;
         }
 
         @Override
         protected void onUpdate(final int dt) {
-            // update the velocity based on how far we are from the snap point
-            mVelocity += getDistanceToLimit() * mSnapToFactor;
 
             // then update the position based on the current velocity
             mPosition += mVelocity * dt / 1000;
+
+            if (  mOldPosition - mPosition  > limitEveryScroll ){
+                mPosition = mOldPosition - limitEveryScroll;
+            }else if ( mPosition - mOldPosition > limitEveryScroll ){
+                mPosition = mOldPosition + limitEveryScroll;
+            }
 
             // and finally, apply some friction to slow it down
             mVelocity *= mFrictionFactor;

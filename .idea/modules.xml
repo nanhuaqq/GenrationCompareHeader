@@ -3,8 +3,11 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/GenrationCompareHeader.iml" filepath="$PROJECT_DIR$/GenrationCompareHeader.iml" />
+      <module fileurl="file://$PROJECT_DIR$/androidHorizontalListView/androidHorizontalListView.iml" filepath="$PROJECT_DIR$/androidHorizontalListView/androidHorizontalListView.iml" />
+      <module fileurl="file://$PROJECT_DIR$/androidHorizontalListViewSample/androidHorizontalListViewSample.iml" filepath="$PROJECT_DIR$/androidHorizontalListViewSample/androidHorizontalListViewSample.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
       <module fileurl="file://$PROJECT_DIR$/appBottomSheet/appBottomSheet.iml" filepath="$PROJECT_DIR$/appBottomSheet/appBottomSheet.iml" />
+      <module fileurl="file://$PROJECT_DIR$/slidingUpPaneLayoutmaster/slidingUpPaneLayoutmaster.iml" filepath="$PROJECT_DIR$/slidingUpPaneLayoutmaster/slidingUpPaneLayoutmaster.iml" />
     </modules>
   </component>
 </project>

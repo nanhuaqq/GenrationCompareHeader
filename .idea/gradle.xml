@@ -9,8 +9,11 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/androidHorizontalListView" />
+            <option value="$PROJECT_DIR$/androidHorizontalListViewSample" />
             <option value="$PROJECT_DIR$/app" />
             <option value="$PROJECT_DIR$/appBottomSheet" />
+            <option value="$PROJECT_DIR$/slidingUpPaneLayoutmaster" />
           </set>
         </option>
       </GradleProjectSettings>
